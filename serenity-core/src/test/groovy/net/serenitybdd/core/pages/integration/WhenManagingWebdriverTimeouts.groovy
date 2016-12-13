@@ -1,11 +1,14 @@
 package net.serenitybdd.core.pages.integration
 
 import net.serenitybdd.core.pages.WebElementFacade
+import net.serenitybdd.core.webdriver.servicepools.ChromeServicePool
+import net.serenitybdd.core.webdriver.servicepools.DriverServicePool
 import net.thucydides.core.pages.integration.StaticSitePage
 import net.thucydides.core.steps.ExecutedStepDescription
 import net.thucydides.core.steps.StepEventBus
 import net.thucydides.core.steps.StepFailure
 import net.thucydides.core.util.MockEnvironmentVariables
+import net.thucydides.core.util.SystemEnvironmentVariables
 import net.thucydides.core.webdriver.SerenityWebdriverManager
 import net.thucydides.core.webdriver.WebDriverFacade
 import net.thucydides.core.webdriver.WebDriverFactory
@@ -15,11 +18,9 @@ import net.thucydides.core.webdriver.exceptions.ElementShouldBeInvisibleExceptio
 import org.openqa.selenium.By
 import org.openqa.selenium.NoSuchElementException
 import org.openqa.selenium.TimeoutException
-import org.openqa.selenium.phantomjs.PhantomJSDriver
-import spock.lang.Ignore
-import spock.lang.Specification
-import spock.lang.Timeout
-import spock.lang.Unroll
+import org.openqa.selenium.WebDriver
+import org.openqa.selenium.chrome.ChromeDriver
+import spock.lang.*
 
 import java.util.concurrent.TimeUnit
 
@@ -32,19 +33,42 @@ import static java.util.concurrent.TimeUnit.SECONDS
  * (see http://docs.seleniumhq.org/docs/04_webdriver_advanced.jsp#implicit-waits).
  * <quote>"An implicit wait is to tell WebDriver to poll the DOM for a certain amount of
  * time when trying to find an element or elements if they are not immediately available."</quote>
- * The WebDriver default is 0. It can be overriden using Sthe webdriver.timeouts.implicitlywait system property.
+ * The WebDriver default is 0. It can be overriden using the webdriver.timeouts.implicitlywait system property.
  *
  *
  */
 class WhenManagingWebdriverTimeouts extends Specification {
 
+    @Shared DriverServicePool driverService;
+
+    WebDriver driver
+
+    def setupSpec() {
+        driverService = new ChromeServicePool()
+        driverService.start()
+    }
+
+    def cleanupSpec() {
+        driverService.shutdown()
+    }
+
+    def WebDriver newDriver() {
+        driver = new ChromeDriver()// driverService.newDriver(DesiredCapabilities.chrome());
+        return driver
+    }
+
     def setup() {
         StepEventBus.eventBus.clear()
+        driver = null
     }
 
     def cleanup() {
         SerenityWebdriverManager.inThisTestThread().closeAllDrivers();
+        if (driver) {
+            driver.quit();
+        }
     }
+
 
     //
     // IMPLICIT WAITS
@@ -69,9 +93,8 @@ class WhenManagingWebdriverTimeouts extends Specification {
             StepEventBus.getEventBus().stepFailed(stepFailure);
         when: "We access the field"
             def page = openStaticPage()
-
             page.verySlowLoadingField.isDisplayed()
-        then: "Not error should not be thrown"
+        then: "No error should be thrown"
             notThrown(org.openqa.selenium.ElementNotVisibleException)
     }
 
@@ -80,14 +103,14 @@ class WhenManagingWebdriverTimeouts extends Specification {
         for(String key : variables.keySet()) {
             environmentVariables.setProperty(key, variables[key]);
         }
-        def driver = new WebDriverFacade(PhantomJSDriver.class, new WebDriverFactory(), environmentVariables); // HtmlUnitDriver();
-        def page = new StaticSitePage(driver, environmentVariables)
+        WebDriverFacade driverFacade = new WebDriverFacade(newDriver(), new WebDriverFactory(), environmentVariables);
+        def page = new StaticSitePage(driverFacade, environmentVariables)
         page.open()
         return page
     }
 
     private StaticSitePage openStaticPage() {
-        def driver = new WebDriverFacade(PhantomJSDriver.class, new WebDriverFactory()); // HtmlUnitDriver();
+        def driver = new WebDriverFacade(newDriver(), new WebDriverFactory(), new SystemEnvironmentVariables()); // HtmlUnitDriver();
         def page = new StaticSitePage(driver)
         page.open()
         return page
@@ -233,9 +256,7 @@ class WhenManagingWebdriverTimeouts extends Specification {
         when: "We wait for a field to appear that takes 2 seconds to load"
             page.slowLoadingField.waitUntilVisible()
         then:
-            NoSuchElementException timeout = thrown()
-        and:
-            timeout.message.contains("Timed out after 1 second")
+            thrown(NoSuchElementException)
     }
 
     def "You can wait for elements to be not visible"() {
@@ -395,7 +416,7 @@ class WhenManagingWebdriverTimeouts extends Specification {
     // fixme
     def "The withTimeoutOf() method can be used to override the global timeouts for elements"() {
         given:
-            def page = openStaticPageWith(["webdriver.timeouts.implicitlywait":"50","webdriver.wait.for.timeout": "50"])
+            def page = openStaticPageWith(["webdriver .timeouts.implicitlywait":"50","webdriver.wait.for.timeout": "50"])
         when:
             page.withTimeoutOf(10, SECONDS).waitFor(By.cssSelector("#city"))
         then:

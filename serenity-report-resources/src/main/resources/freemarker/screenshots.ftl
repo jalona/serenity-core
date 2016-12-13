@@ -121,7 +121,7 @@
                             </div>
                         <#elseif (featureOrStory?? && featureOrStory.isPresent())>
                             <div>
-                                <#assign parentTitle = inflection.of(featureOrStory.get().name).asATitle() >
+                                <#assign parentTitle = formatter.renderDescription(inflection.of(featureOrStory.get().name).asATitle())>
                                 <#assign parentType = inflection.of(featureOrStory.get().type).asATitle() >
                                 <h3 class="discreet-story-header">
                                     <i class="fa fa-2x fa-comments-o"></i>
@@ -149,7 +149,7 @@
                             <#assign tagTitle = inflection.of(tag.shortName).asATitle() >
                             <p class="tag">
                                 <span class="badge tag-badge">
-                                    <i class="fa fa-tag"></i>&nbsp;<a class="tagLink" href="${tagReport}">${tagTitle}
+                                    <i class="fa fa-tag"></i>&nbsp;<a class="tagLink" href="${tagReport}">${formatter.htmlCompatible(tagTitle)}
                                     (${tag.type})</a>
                                 </span>
                             </p>
@@ -169,7 +169,7 @@
                                                                                     height="25" alt="Video"/></a>
                         </#if>
                             <span class="test-case-title">
-                                <span class="${outcome_text}">${testOutcome.unqualified.titleWithLinks}
+                                <span class="${outcome_text}">${formatter.htmlCompatibleStoryTitle(testOutcome.unqualified.titleWithLinks)}
                                     <span class="related-issue-title">${testOutcome.formattedIssues}</span>
                                 </span>
                             </span>
@@ -186,7 +186,7 @@
 <#if (testOutcome.isDataDriven())>
     <div class="story-title">
         <h3>Scenario:</h3>
-        <div class="scenario">${formatter.formatWithFields(testOutcome.dataDrivenSampleScenario, testOutcome.exampleFields)}</div>
+        <div class="scenario">${formatter.formatWithFields(testOutcome.dataDrivenSampleScenario)}</div>
     </div>
 </#if>
 

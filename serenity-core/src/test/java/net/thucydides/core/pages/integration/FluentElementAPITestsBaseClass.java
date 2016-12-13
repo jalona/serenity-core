@@ -1,17 +1,47 @@
 package net.thucydides.core.pages.integration;
 
 
+import net.serenitybdd.core.webdriver.servicepools.ChromeServicePool;
+import net.thucydides.core.steps.StepEventBus;
 import net.thucydides.core.webdriver.StaticTestSite;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.remote.DesiredCapabilities;
+
+import java.io.IOException;
 
 public class FluentElementAPITestsBaseClass {
 
     private static StaticTestSite staticTestSite;
     private static StaticSitePage chromePage;
-    private static StaticSitePage phantomjsPage;
+
+    private static WebDriver driver;
+    private static StaticSitePage staticSitePage;
+
+    private static ChromeServicePool chromeService;
+
+    @BeforeClass
+    public static void openBrowsers() throws IOException {
+        chromeService = new ChromeServicePool();
+        chromeService.start();
+        StepEventBus.getEventBus().clear();
+
+        driver = chromeService.newDriver(DesiredCapabilities.chrome());
+        staticSitePage = new StaticSitePage(driver, 1000);
+        staticSitePage.open();
+    }
+
+    @AfterClass
+    public static void quitBrowsers() {
+        driver.quit();
+        chromeService.shutdown();
+    }
+
+    protected WebDriver getDriver() { return driver; }
+
+    protected StaticSitePage getPage() { return staticSitePage; }
 
     @BeforeClass
     public static void openStaticSite() {
@@ -29,24 +59,6 @@ public class FluentElementAPITestsBaseClass {
             chromePage.getDriver().quit();
             chromePage = null;
         }
-    }
-
-    protected StaticSitePage getChromePage() {
-        if (chromePage == null) {
-            WebDriver driver = getStaticTestSite().open("chrome");
-            chromePage = new StaticSitePage(driver);
-            chromePage.open();
-        }
-        return chromePage;
-    }
-
-    protected StaticSitePage getPhantomJSPage() {
-        if (phantomjsPage == null) {
-            WebDriver driver = getStaticTestSite().open("phantomjs");
-            phantomjsPage = new StaticSitePage(driver);
-            phantomjsPage.open();
-        }
-        return phantomjsPage;
     }
 
     @AfterClass

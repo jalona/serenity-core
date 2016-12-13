@@ -1,13 +1,43 @@
 package net.serenitybdd.core.annotations.findby.integration
 
+import net.serenitybdd.core.webdriver.servicepools.ChromeServicePool
+import net.serenitybdd.core.webdriver.servicepools.DriverServicePool
+import net.thucydides.core.steps.StepEventBus
+import net.thucydides.core.webdriver.SerenityWebdriverManager
 import net.thucydides.core.webdriver.integration.PageWithFindBys
 import org.openqa.selenium.WebDriver
-import org.openqa.selenium.phantomjs.PhantomJSDriver
+import org.openqa.selenium.remote.DesiredCapabilities
+import spock.lang.Shared
 import spock.lang.Specification
 
 class WhenLocatingWebElementsUsingEnhancedFindBys extends Specification {
 
-    static WebDriver driver
+
+    @Shared DriverServicePool chromeService;
+    WebDriver driver
+
+    def setupSpec() {
+        chromeService = new ChromeServicePool()
+        chromeService.start()
+        StepEventBus.eventBus.clear()
+
+    }
+
+    def cleanupSpec() {
+        chromeService.shutdown()
+    }
+
+    def setup() {
+        StepEventBus.eventBus.clear()
+        driver = chromeService.newDriver(DesiredCapabilities.chrome())
+    }
+
+    def cleanup() {
+        SerenityWebdriverManager.inThisTestThread().closeAllDrivers();
+        if (driver) {
+            driver.quit();
+        }
+    }
 
 
     def "should load simple @FindBy fields"() {
@@ -38,13 +68,5 @@ class WhenLocatingWebElementsUsingEnhancedFindBys extends Specification {
             def options = page.allTheInputAndOptionsFields
         then:
             options.size() == (20 + 8)
-    }
-
-    def setupSpec() {
-        driver = new PhantomJSDriver()
-    }
-
-    def cleanupSpec() {
-        driver.quit()
     }
 }

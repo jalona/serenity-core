@@ -94,7 +94,7 @@ public abstract class BaseRequirementsService implements RequirementsService {
             Optional<Requirement> requirement = getParentRequirementOf(testOutcome, tagProvider);
             if (requirement.isPresent()) {
                 LOGGER.debug("Requirement found for test outcome " + testOutcome.getTitle() + "-" + testOutcome.getIssueKeys() + ": " + requirement);
-                if (getRequirementAncestors().containsKey(requirement.get())) {
+                if ((getRequirementAncestors() != null) && (getRequirementAncestors().containsKey(requirement.get()))) {
                     return getRequirementAncestors().get(requirement.get());
                 } else {
                     LOGGER.warn("Requirement without identified ancestors found test outcome " + testOutcome.getTitle() + "-" + testOutcome.getIssueKeys() + ": " + requirement);
@@ -110,7 +110,6 @@ public abstract class BaseRequirementsService implements RequirementsService {
         for (Requirement requirement : requirements) {
             List<Requirement> requirementPath = ImmutableList.of(requirement);
             requirementAncestors.put(requirement, ImmutableList.of(requirement));
-            LOGGER.debug("Requirement ancestors for:" + requirement + " = " + requirementPath);
             indexChildRequirements(requirementPath, requirement.getChildren());
         }
     }
@@ -121,7 +120,6 @@ public abstract class BaseRequirementsService implements RequirementsService {
             List<Requirement> requirementPath = newArrayList(ancestors);
             requirementPath.add(requirement);
             requirementAncestors.put(requirement, ImmutableList.copyOf(requirementPath));
-            LOGGER.debug("Requirement ancestors for:" + requirement + " = " + requirementPath);
             indexChildRequirements(requirementPath, requirement.getChildren());
         }
     }

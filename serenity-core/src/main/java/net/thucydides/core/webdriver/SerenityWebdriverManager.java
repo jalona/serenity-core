@@ -68,6 +68,10 @@ public class SerenityWebdriverManager implements WebdriverManager {
         inThisTestThread().closeCurrentDriver();
     }
 
+    public void closeCurrentDrivers() {
+        inThisTestThread().closeCurrentDrivers();
+    }
+
     public void closeAllDrivers() {
         inThisTestThread().closeAllDrivers();
     }
@@ -117,6 +121,9 @@ public class SerenityWebdriverManager implements WebdriverManager {
     private String nameOf(WebDriver driver) {
         if (driver instanceof WebDriverFacade) {
             return ((WebDriverFacade) driver).getDriverName();
+        }
+        if ((driver instanceof RemoteWebDriver) && ((RemoteWebDriver) driver).getCapabilities() != null) {
+            return ((RemoteWebDriver) driver).getCapabilities().getBrowserName();
         }
         return driver.toString();
     }

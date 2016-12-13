@@ -6,8 +6,6 @@ import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
 
 import java.util.List;
 
-import static net.serenitybdd.screenplay.targets.EnsureFieldVisible.ensureThat;
-
 public class XPathOrCssTarget extends Target {
 
     private final String cssOrXPathSelector;
@@ -20,7 +18,6 @@ public class XPathOrCssTarget extends Target {
     public WebElementFacade resolveFor(Actor theActor) {
         TargetResolver resolver = new TargetResolver(BrowseTheWeb.as(theActor).getDriver());
         WebElementFacade resolvedTarget = resolver.findBy(cssOrXPathSelector);
-        ensureThat(theActor).canSee(resolvedTarget);
         return resolvedTarget;
     }
 
@@ -30,7 +27,8 @@ public class XPathOrCssTarget extends Target {
     }
 
     public Target of(String... parameters) {
-        return new XPathOrCssTarget(targetElementName, instantiated(cssOrXPathSelector, parameters));
+        return new XPathOrCssTarget(instantiated(targetElementName, parameters),
+                                    instantiated(cssOrXPathSelector, parameters));
     }
 
     public Target called(String name) {

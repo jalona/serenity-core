@@ -6,6 +6,7 @@ import net.thucydides.core.requirements.model.FeatureType;
 
 import static net.thucydides.core.model.ReportType.ROOT;
 import static net.thucydides.core.util.NameConverter.humanize;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 /**
  * Represents a given user story or feature.
@@ -265,6 +266,15 @@ public class Story {
     }
 
     public TestTag asTag() {
-        return TestTag.withName(storyName).andType(type.toString());
+        return asQualifiedTag();// TestTag.withName(storyName).andType(type.toString());
     }
+
+    public TestTag asQualifiedTag() {
+        String parentName = (getPath() != null) ? humanize(LastElement.of(getPath())) : null;
+
+        return (isNotEmpty(parentName)) ?
+                TestTag.withName(parentName + "/" + storyName).andType(type.toString()) :
+                TestTag.withName(storyName).andType(type.toString());
+    }
+
 }

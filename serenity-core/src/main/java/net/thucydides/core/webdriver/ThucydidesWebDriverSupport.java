@@ -99,6 +99,12 @@ public class ThucydidesWebDriverSupport {
         }
     }
 
+    public static void clearSession() {
+        if (getWebdriverManager().getCurrentDriver() != null) {
+            getWebdriverManager().getCurrentDriver().manage().deleteAllCookies();
+        }
+    }
+
     public static void useDriver(WebDriver driver) {
         initialize();
         getWebdriverManager().registerDriver(driver);
@@ -131,6 +137,19 @@ public class ThucydidesWebDriverSupport {
         }
     }
 
+    public static void closeCurrentDrivers() {
+        if (webdriversInitialized()) {
+            getWebdriverManager().closeCurrentDrivers();
+        }
+    }
+
+    //closeCurrentDrivers
+    public static void closeDriver() {
+        if (webdriversInitialized()) {
+            getWebdriverManager().closeDriver();
+        }
+    }
+
     private static void setupWebdriverManager(WebdriverManager webdriverManager, String requestedDriver) {
         setWebdriverManager(webdriverManager);
         getWebdriverManager().overrideDefaultDriverType(requestedDriver);
@@ -150,7 +169,6 @@ public class ThucydidesWebDriverSupport {
         if (webdriverManagerIsNotInstantiated()) {
             initialize();
         }
-        LOGGER.debug("Using WebDriver Manager " + webdriverManagerThreadLocal.get());
         return webdriverManagerThreadLocal.get();
     }
 

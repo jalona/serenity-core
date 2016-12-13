@@ -58,9 +58,24 @@ public enum ThucydidesSystemProperty {
     WEBDRIVER_REMOTE_OS,
 
     /**
+     * Path to the Internet Explorer driver, if it is not on the system path.
+     */
+    WEBDRIVER_IE_DRIVER,
+
+    /**
+     * Path to the Edge driver, if it is not on the system path.
+     */
+    WEBDRIVER_EDGE_DRIVER,
+
+    /**
      * Path to the Chrome driver, if it is not on the system path.
      */
     WEBDRIVER_CHROME_DRIVER,
+
+    /**
+     * Path to the Chrome binary, if it is not on the system path.
+     */
+    WEBDRIVER_CHROME_BINARY,
 
     /**
      * A unique identifier for the project under test, used to record test statistics.
@@ -174,6 +189,20 @@ public enum ThucydidesSystemProperty {
      * Restart the browser every so often during data-driven tests.
      */
     THUCYDIDES_RESTART_BROWSER_FREQUENCY,
+
+    /**
+     * Indicate when a browser should be restarted during a test run.
+     * Can be one of: example, scenario, story, feature, never
+     *
+     */
+    THUCYDIDES_RESTART_BROWSER_FOR_EACH,
+
+    /**
+     * When multiple actors are used with the Screenplay pattern, a separate browser is configured for each actor.
+     * Set this property to false if you want actors use a common browser.
+     * This can be useful if actors are used to illustrate the intent of a test, but no tests use more than one actor simultaneously
+     */
+    THUCYDIDES_DIFFERENT_BROWSER_FOR_EACH_ACTOR,
 
     /**
      * Pause (in ms) between each test step.
@@ -376,10 +405,12 @@ public enum ThucydidesSystemProperty {
     WEBDRIVER_FIREFOX_PROFILE,
     /**
      * Enable JQuery integration.
-     * If set to true (the default), JQuery will be injected into any page that does not already have it.
-     * You can turn this option off for performance reasons if you are not using JQuery selectors.
+     * If set to true, JQuery will be injected into any page that does not already have it.
+     * This option is deactivated by default, as it can slow down page loading.
      */
     THUCYDIDES_JQUERY_INTEGRATION,
+
+    SAUCELABS_BROWSERNAME("saucelabs.browserName"),
 
     SAUCELABS_TARGET_PLATFORM,
 
@@ -420,9 +451,17 @@ public enum ThucydidesSystemProperty {
 
     BROWSERSTACK_OS,
 
-    BROWSERSTACK_OS_VERSION,
+    BROWSERSTACK_OS_VERSION("browserstack.os_version"),
 
+    /**
+     * Browserstack uses this property for desktop browsers, like firefox, chrome and IE.
+     */
     BROWSERSTACK_BROWSER,
+
+    /**
+     * Browserstack uses this one for android and iphone.
+     */
+    BROWSERSTACK_BROWSERNAME("browserstack.browserName"),
 
     BROWSERSTACK_BROWSER_VERSION,
 
@@ -625,9 +664,21 @@ public enum ThucydidesSystemProperty {
     OUTPUT_FORMATS,
 
     /**
+     * If set to true (the default), allow markdown formatting in test outcome titles and descriptions.
+     * This is a comma-separated lists of values from the following: story, narrative, step
+     * By default, Markdown is enabled for story titles and narrative texts, but not for steps.
+     */
+    ENABLE_MARKDOWN,
+
+    /**
      * Path to PhantomJS executable
      */
     PHANTOMJS_BINARY_PATH,
+
+    /**
+     * Path to the Gecko driver binary
+     */
+    WEBDRIVER_GECKO_DRIVER,
 
     /**
      * If set to true, don't format embedded tables in JBehave or Gherkin steps.
@@ -659,6 +710,12 @@ public enum ThucydidesSystemProperty {
     DASHBOARD_TAG_LIST,
 
     /**
+     * If set to false, render report names in a readable form as opposed to a hash format.
+     * Note: this can cause problems on operating systems that limit path lengths such as Windows.
+     */
+    SERENITY_COMPRESSED_FILENAMES,
+
+    /**
      * If set, this will define the list of tag types to be excluded from the dashboard screens
      */
     DASHBOARD_EXCLUDED_TAG_LIST,
@@ -674,11 +731,6 @@ public enum ThucydidesSystemProperty {
      * Defaults to UTF-8
      */
     JSON_CHARSET,
-
-    /**
-     * If set to true, the RetryFilteringRunNotifier will be used to attempt to rerun failing tests.
-     */
-    JUNIT_RETRY_TESTS,
 
     /**
      * Stack traces are by default decluttered for readability.
@@ -772,7 +824,30 @@ public enum ThucydidesSystemProperty {
      * mode waits for at least one element to be visible before proceeding.
      * For legacy reasons, the default strategy is Pessimistic.
      */
-    SERENITY_WEBDRIVER_COLLECTION_LOADING_STRATEGY("serenity.webdriver.collection_loading_strategy");
+    SERENITY_WEBDRIVER_COLLECTION_LOADING_STRATEGY("serenity.webdriver.collection_loading_strategy"),
+
+    /**
+     * Serenity will try to download drivers not present on the system.
+     * If you don't want this behaviour, set this property to false
+     */
+    AUTOMATIC_DRIVER_DOWNLOAD,
+
+    /**
+     * If the Gecko Driver is on the system path, it will be used (with Marionnette) by default.
+     * If you want to use the old-style Firefox driver, but have gecko on the system path,
+     * then set this property to false.
+     */
+    USE_GECKO_DRIVER,
+
+    /**
+     * Use this property to pass options to Marionette using the 'moz:firefoxOptions' capability option.
+     */
+    GECKO_FIREFOX_OPTIONS,
+
+    /**
+     * Use this property to specify the maximum number of times to rerun the failing tests.
+     */
+    TEST_RETRY_COUNT;
 
     private String propertyName;
     public static final int DEFAULT_HEIGHT = 700;
@@ -878,4 +953,5 @@ public enum ThucydidesSystemProperty {
     public boolean isDefinedIn(EnvironmentVariables environmentVariables) {
         return StringUtils.isNotEmpty(from(environmentVariables));
     }
+
 }

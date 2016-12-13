@@ -29,15 +29,26 @@
                             <#foreach testOutcome in testResultSet>
                                 <#assign test_outcome_icon = formatter.resultIcon().forResult(testOutcome.result) />
 
+                                <#assign exampleCount = "" />
+                                <#if testOutcome.dataDriven>
+                                    <#assign exampleCount>&nbsp;(${testOutcome.dataTable.size}  examples)</#assign>
+                                </#if>
+
                             <tr class="test-${testOutcome.result}">
                                 <td><span class="summary-icon">${test_outcome_icon}</span>
                                     <#if (testOutcome.manual)><i class="fa fa-user manual" title="Manual test"></i></#if>
                                     <span style="display:none">${testOutcome.result}</span></td>
                                 <td class="${testOutcome.result}-text">
                                     <div class="ellipsis">
-                                    <a href="${relativeLink}${testOutcome.reportName}.html" class="ellipsis" title="${formatter.htmlAttributeCompatible(testOutcome.conciseErrorMessage, 40)}">
-                                    ${testOutcome.unqualified.titleWithLinks} ${testOutcome.formattedIssues}
-                                    </a></div>
+                                        <#assign testOutcomeTitle = testOutcome.unqualified.titleWithLinks >
+
+                                        <a href="${relativeLink}${testOutcome.reportName}.html" class="ellipsis" title="${formatter.htmlAttributeCompatible(testOutcome.conciseErrorMessage, 40)}">
+                                            ${formatter.htmlCompatible(testOutcomeTitle)}${exampleCount}
+                                            <#if (!testOutcome.titleWithIssues)>
+                                                <span class="related-issue-title">${testOutcome.formattedIssues}</span>
+                                            </#if>
+                                        </a>
+                                    </div>
                                 </td>
 
                                 <td class="lightgreentext">${testOutcome.nestedStepCount}</td>

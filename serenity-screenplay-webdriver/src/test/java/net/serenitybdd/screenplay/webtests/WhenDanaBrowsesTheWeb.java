@@ -4,6 +4,10 @@ import net.serenitybdd.junit.runners.SerenityRunner;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Question;
 import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
+import net.serenitybdd.screenplay.actions.Click;
+import net.serenitybdd.screenplay.matchers.WebElementStateMatchers;
+import net.serenitybdd.screenplay.targets.Target;
+import net.serenitybdd.screenplay.waits.WaitUntil;
 import net.serenitybdd.screenplay.webtests.model.Client;
 import net.serenitybdd.screenplay.webtests.pages.ProfilePage;
 import net.serenitybdd.screenplay.webtests.questions.ProfileQuestion;
@@ -11,6 +15,7 @@ import net.serenitybdd.screenplay.webtests.questions.TheValidationMessages;
 import net.serenitybdd.screenplay.webtests.tasks.*;
 import net.thucydides.core.annotations.Managed;
 import net.thucydides.core.annotations.Steps;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.WebDriver;
@@ -20,16 +25,17 @@ import static net.serenitybdd.screenplay.matchers.ConsequenceMatchers.displays;
 import static net.serenitybdd.screenplay.matchers.ReportedErrorMessages.reportsErrors;
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.*;
 import static net.serenitybdd.screenplay.questions.WebElementQuestion.the;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 @RunWith(SerenityRunner.class)
 public class WhenDanaBrowsesTheWeb {
 
-    @Managed(driver = "htmlunit")
+    @Managed(driver = "phantomjs")
     WebDriver firstBrowser;
 
-    @Managed(driver = "htmlunit")
+    @Managed(driver = "phantomjs")
     WebDriver anotherBrowser;
 
     ProfileQuestion profile = new ProfileQuestion();
@@ -78,6 +84,40 @@ public class WhenDanaBrowsesTheWeb {
         and(dana).should(seeThat(the(ProfilePage.NAME), isEnabled()));
         and(dana).should(seeThat(the(ProfilePage.NAME), isCurrentlyEnabled()));
         and(dana).should(seeThat(TheProfileName.isDisplayed()));
+    }
+
+    @Ignore("In progress")
+    @Test
+    public void danaCanWaitForTheStateOfTheWebPage() {
+
+        Actor dana = new Actor("Dana");
+        dana.can(BrowseTheWeb.with(firstBrowser));
+
+        givenThat(dana).has(openedTheApplication);
+
+        when(dana).attemptsTo(viewHerProfile);
+
+        and(dana).attemptsTo(
+                WaitUntil.the(Target.the("nameField").locatedBy("#name"),
+                        WebElementStateMatchers.isVisible()));
+
+        assertThat(profilePage.nameField, isVisible());
+    }
+
+
+    ProfilePage profilePage;
+
+    @Test
+    public void danaCanMakeAssertionsAboutRawWebElements() {
+
+        Actor dana = new Actor("Dana");
+        dana.can(BrowseTheWeb.with(firstBrowser));
+
+        givenThat(dana).has(openedTheApplication);
+
+        when(dana).attemptsTo(viewHerProfile);
+
+        assertThat(profilePage.nameField, isVisible());
     }
 
     @Test
@@ -228,6 +268,7 @@ public class WhenDanaBrowsesTheWeb {
 
         when(dana).attemptsTo(viewHerOldProfile);
         and(dana).attemptsTo(
+                Click.on(ProfilePage.SOME_BUTTON),
                 UpdateHerProfile
                         .withName("Dana")
                         .andCountryOfResidence("France")

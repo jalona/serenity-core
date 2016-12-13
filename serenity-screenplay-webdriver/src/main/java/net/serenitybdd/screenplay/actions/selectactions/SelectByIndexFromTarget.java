@@ -14,7 +14,7 @@ public class SelectByIndexFromTarget implements Interaction {
         this.index = index;
     }
 
-    @Step("{0} clicks on #target")
+    @Step("{0} selects index #index in #target")
     public <T extends Actor> void performAs(T theUser) {
         target.resolveFor(theUser).selectByIndex(index);
     }

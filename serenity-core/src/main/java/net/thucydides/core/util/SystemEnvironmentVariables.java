@@ -24,7 +24,7 @@ public class SystemEnvironmentVariables implements EnvironmentVariables {
 
     protected SystemEnvironmentVariables(Properties systemProperties, Map<String, String> systemValues) {
         this.systemProperties = PropertiesUtil.copyOf(systemProperties);
-        this.systemValues = new HashMap<String, String>(systemValues);
+        this.systemValues = new HashMap<>(systemValues);
     }
 
     public String getValue(final String name) {
@@ -56,6 +56,17 @@ public class SystemEnvironmentVariables implements EnvironmentVariables {
     @Override
     public Properties getProperties() {
         return new Properties(systemProperties);
+    }
+
+    @Override
+    public Properties getPropertiesWithPrefix(String prefix) {
+        Properties filteredProperties = new Properties();
+        for (String key : systemProperties.stringPropertyNames()) {
+            if (key.startsWith(prefix)) {
+                filteredProperties.put(key, systemProperties.getProperty(key));
+            }
+        }
+        return filteredProperties;
     }
 
 

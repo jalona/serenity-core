@@ -6,6 +6,8 @@ import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.util.EnvironmentVariables;
 import net.thucydides.core.webdriver.javascript.JavascriptExecutorFacade;
 import org.openqa.selenium.WebDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +18,7 @@ public class JQueryEnabledPage {
 
     private final WebDriver driver;
     private final EnvironmentVariables environmentVariables;
+    private static final Logger LOGGER = LoggerFactory.getLogger(JQueryEnabledPage.class);
 
     protected JQueryEnabledPage(WebDriver driver) {
         this(driver, Injectors.getInjector().getProvider(EnvironmentVariables.class).get() );
@@ -81,5 +84,13 @@ public class JQueryEnabledPage {
 
     public void injectJavaScriptUtils(){
     	executeScriptFrom("javascript/cycle.js");
+    }
+
+    public void activateJQuery() {
+
+        if (isJQueryIntegrationEnabled() && !isJQueryAvailable()) {
+            injectJQuery();
+            injectJQueryPlugins();
+        }
     }
 }

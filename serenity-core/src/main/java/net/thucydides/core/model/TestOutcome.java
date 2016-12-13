@@ -33,6 +33,7 @@ import net.thucydides.core.steps.StepFailure;
 import net.thucydides.core.steps.StepFailureException;
 import net.thucydides.core.steps.TestFailureCause;
 import net.thucydides.core.util.EnvironmentVariables;
+import net.thucydides.core.util.Inflector;
 import net.thucydides.core.util.NameConverter;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -235,13 +236,13 @@ public class TestOutcome {
     public TestOutcome(final String name, final Class<?> testCase) {
         this(name, testCase, Injectors.getInjector().getInstance(EnvironmentVariables.class));
     }
-        /**
-         * Create a test outcome based on a test method in a test class.
-         * The requirement type will be derived if possible using the class package.
-         *
-         * @param name
-         * @param testCase
-         */
+    /**
+     * Create a test outcome based on a test method in a test class.
+     * The requirement type will be derived if possible using the class package.
+     *
+     * @param name
+     * @param testCase
+     */
     public TestOutcome(final String name, final Class<?> testCase, EnvironmentVariables environmentVariables) {
         startTime = now().toDate().getTime();
         this.name = name;
@@ -300,6 +301,7 @@ public class TestOutcome {
 
     public TestOutcome asManualTest() {
         this.manual = true;
+        addTag(TestTag.withName("Manual").andType("External Tests"));
         return this;
     }
 
@@ -324,14 +326,14 @@ public class TestOutcome {
         this(name, testCase, userStory, Injectors.getInjector().getInstance(EnvironmentVariables.class));
     }
 
-        /**
-         * A test outcome should relate to a particular test class or user story class.
-         *
-         * @param name      The name of the Java method implementing this test, if the test is a JUnit or TestNG test (for example)
-         * @param testCase  The test class that contains this test method, if the test is a JUnit or TestNG test
-         * @param userStory If the test is not implemented by a Java class (e.g. an easyb story), we may just use the Story class to
-         *                  represent the story in which the test is implemented.
-         */
+    /**
+     * A test outcome should relate to a particular test class or user story class.
+     *
+     * @param name      The name of the Java method implementing this test, if the test is a JUnit or TestNG test (for example)
+     * @param testCase  The test class that contains this test method, if the test is a JUnit or TestNG test
+     * @param userStory If the test is not implemented by a Java class (e.g. an easyb story), we may just use the Story class to
+     *                  represent the story in which the test is implemented.
+     */
     protected TestOutcome(final String name, final Class<?> testCase, final Story userStory, EnvironmentVariables environmentVariables) {
         startTime = now().toDate().getTime();
         this.name = name;
@@ -744,6 +746,10 @@ public class TestOutcome {
         return (previousStep.getResult() == ERROR || previousStep.getResult() == FAILURE || previousStep.getResult() == COMPROMISED);
     }
 
+    public boolean isTitleWithIssues() {
+        return (!getTitle().equalsIgnoreCase(getUnqualified().getTitleWithLinks()));
+    }
+
     public class TitleBuilder {
         private final boolean qualified;
         private final TestOutcome testOutcome;
@@ -754,7 +760,8 @@ public class TestOutcome {
         }
 
         public String getTitleWithLinks() {
-            return getFormatter().addLinks(getTitle());
+            String title = Inflector.getInstance().of(getTitle()).asATitle().toString();
+            return getFormatter().addLinks(title);
         }
 
         public String getTitle() {
@@ -1297,6 +1304,10 @@ public class TestOutcome {
         }
     }
 
+    public void setResult(final TestResult annotatedResult) {
+        this.annotatedResult = annotatedResult;
+    }
+
     public TestResult getAnnotatedResult() {
         return annotatedResult;
     }
@@ -1421,7 +1432,7 @@ public class TestOutcome {
         Set<String> issues = Sets.newHashSet(getIssues());
         if (!issues.isEmpty()) {
             List<String> orderedIssues = sort(issues, on(String.class));
-            return "(" + getFormatter().addLinks(StringUtils.join(orderedIssues, ", ")) + ")";
+            return "(" + getFormatter().addLinks(join(orderedIssues, ", ")) + ")";
         } else {
             return "";
         }
@@ -1472,18 +1483,14 @@ public class TestOutcome {
         if (tags == null) {
             tags = getTagsUsingTagProviders(getTagProviderService().getTagProviders(getTestSource()));
         }
-        Set<TestTag> augmentedTags = Sets.newHashSet(tags);
-        augmentedTags.addAll(getFeatureTag().asSet());
-        addUserStoryFeatureTo(augmentedTags);
-        return ImmutableSet.copyOf(augmentedTags);//tags);
+        return ImmutableSet.copyOf(tags);
     }
 
-    private void addUserStoryFeatureTo(Set<TestTag> augmentedTags) {
+    public void addUserStoryFeatureTo(Set<TestTag> augmentedTags) {
         if (userStory != null && userStory.getFeature() != null) {
             augmentedTags.add(TestTag.withName(userStory.getFeature().getName()).andType("feature"));
         }
     }
-
 
     private Set<TestTag> getTagsUsingTagProviders(List<TagProvider> tagProviders) {
         Set<TestTag> tags = Sets.newHashSet();
@@ -1627,14 +1634,15 @@ public class TestOutcome {
     }
 
     public int countResults(TestResult expectedResult, TestType expectedType) {
-        if (annotatedResult != null) {
+        if (annotatedResult != null && !annotatedResult.executedResultsCount()) {
             return annotatedResultCount(expectedResult, expectedType);
         }
+
         if (isDataDriven()) {
-            return countDataRowsWithResult(expectedResult);
-        } else {
-            return (getResult() == expectedResult) && (typeCompatibleWith(expectedType)) ? 1 : 0;
+            return countDataRowsWithResult(expectedResult, expectedType);
         }
+
+        return (getResult() == expectedResult) && (typeCompatibleWith(expectedType)) ? 1 : 0;
     }
 
     private int annotatedResultCount(TestResult expectedResult, TestType expectedType) {
@@ -1656,10 +1664,12 @@ public class TestOutcome {
         }
     }
 
-    private int countDataRowsWithResult(TestResult expectedResult) {
+    private int countDataRowsWithResult(TestResult expectedResult, TestType expectedType) {
         int matchingRowCount = 0;
-        for (DataTableRow row : getDataTable().getRows()) {
-            matchingRowCount += (row.getResult() == expectedResult) ? 1 : 0;
+        if (typeCompatibleWith(expectedType)) {
+            for (DataTableRow row : getDataTable().getRows()) {
+                matchingRowCount += (row.getResult() == expectedResult) ? 1 : 0;
+            }
         }
         return matchingRowCount;
 //        List<DataTableRow> matchingRows
@@ -1669,14 +1679,14 @@ public class TestOutcome {
 
     public int countNestedStepsWithResult(TestResult expectedResult, TestType testType) {
         if (isDataDriven()) {
-            return countDataRowStepsWithResult(expectedResult);
+            return countDataRowStepsWithResult(expectedResult, testType);
         } else {
             return (getResult() == expectedResult) && (typeCompatibleWith(testType)) ? getNestedStepCount() : 0;
         }
     }
 
-    private int countDataRowStepsWithResult(TestResult expectedResult) {
-        int rowsWithResult = countDataRowsWithResult(expectedResult);
+    private int countDataRowStepsWithResult(TestResult expectedResult, TestType testType) {
+        int rowsWithResult = countDataRowsWithResult(expectedResult, testType);
         int totalRows = getDataTable().getSize();
         int totalSteps = getNestedStepCount();
         return totalSteps * rowsWithResult / totalRows;

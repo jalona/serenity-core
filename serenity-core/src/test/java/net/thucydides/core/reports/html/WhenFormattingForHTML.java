@@ -3,6 +3,8 @@ package net.thucydides.core.reports.html;
 import com.google.common.collect.ImmutableList;
 import net.thucydides.core.issues.IssueTracking;
 import net.thucydides.core.model.NumericalFormatter;
+import net.thucydides.core.model.Story;
+import net.thucydides.core.model.TestOutcome;
 import net.thucydides.core.util.EnvironmentVariables;
 import net.thucydides.core.util.MockEnvironmentVariables;
 import org.junit.After;
@@ -47,6 +49,21 @@ public class WhenFormattingForHTML {
         String formattedValue = formatter.addLinks("Fixes issue #123");
 
         assertThat(formattedValue, is("Fixes issue <a target=\"_blank\" href=\"http://my.issue.tracker/MY-PROJECT/browse/ISSUE-123\">#123</a>"));
+    }
+
+    @Test
+    public void should_identify_titles_containing_issue_links() {
+        when(issueTracking.getIssueTrackerUrl()).thenReturn("http://my.issue.tracker/MY-PROJECT/browse/{0}");
+        when(issueTracking.getShortenedIssueTrackerUrl()).thenReturn("http://my.issue.tracker/MY-PROJECT/browse/ISSUE-{0}");
+
+        TestOutcome outcomeWithIssues = TestOutcome.forTestInStory("Fix for #123", Story.called("some story"));
+        outcomeWithIssues.usingIssueTracking(issueTracking);
+
+        TestOutcome outcomeWithNoIssues = TestOutcome.forTestInStory("A simple test", Story.called("some story"));
+        outcomeWithNoIssues.usingIssueTracking(issueTracking);
+
+        assertThat(outcomeWithIssues.isTitleWithIssues(), is(true));
+        assertThat(outcomeWithNoIssues.isTitleWithIssues(), is(false));
     }
 
     @Test
@@ -150,11 +167,11 @@ public class WhenFormattingForHTML {
     }
 
     @Test
-    public void formatter_should_not_render_asciidoc_not_if_configured() {
+    public void formatter_should_render_markdown_by_default() {
         EnvironmentVariables environmentVariables = new MockEnvironmentVariables();
         Formatter formatter = new Formatter(issueTracking, environmentVariables);
         String formatted = formatter.renderDescription("a quick *brown* fox\njumped over a log");
-        assertThat(formatted, is("a quick *brown* fox<br>jumped over a log"));
+        assertThat(formatted, containsString("a quick <em>brown</em> fox"));
     }
 
     private final String htmlDescription = "<h2><a name=\"ScenarioDosometests\"></a>Scenario Do some tests</h2>\n"+
@@ -204,9 +221,9 @@ public class WhenFormattingForHTML {
         when(issueTracking.getShortenedIssueTrackerUrl()).thenReturn(null);
         Formatter formatter = new Formatter(issueTracking);
 
-        String formattedValue = formatter.addLinks("A scenario with about issues #123 and #456");
+        String formattedValue = formatter.addLinks("A scenario about issues #123 and #456");
 
-        assertThat(formattedValue, is("A scenario with about issues #123 and #456"));
+        assertThat(formattedValue, is("A scenario about issues #123 and #456"));
     }
 
     @Test
@@ -309,7 +326,7 @@ public class WhenFormattingForHTML {
 
         String formattedValue = formatter.htmlCompatible("<ul style='margin-left:5%'><li>Line one</li><li>Line two</li><li>Line three</li></ul>");
 
-        assertThat(formattedValue, is("<ul style='margin-left:5%'><li>Line one</li><li>Line two</li><li>Line three</li></ul>"));
+        assertThat(formattedValue.trim(), is("<ul style='margin-left:5%'><li>Line one</li><li>Line two</li><li>Line three</li></ul>"));
     }
 
     @Test
@@ -374,9 +391,31 @@ public class WhenFormattingForHTML {
         Formatter formatter = new Formatter(issueTracking);
 
         List<String> fields = ImmutableList.of("name","age");
-        String formattedValue = formatter.formatWithFields("Given a person named <name>\nand aged <age>", fields);
+        String formattedValue = formatter.formatWithFields("Given a person named <name>\nand aged <age>");
 
         assertThat(formattedValue, is("Given a person named &lt;name&gt;<br>and aged &lt;age&gt;"));
+    }
+
+    @Test
+    public void should_disable_markdown_formatting_if_configured() {
+        EnvironmentVariables environmentVariables = new MockEnvironmentVariables();
+        environmentVariables.setProperty("enable.markdown", "story");
+        Formatter formatter = new Formatter(issueTracking, environmentVariables);
+
+        String formattedValue = formatter.formatWithFields("Given a **person** named _Joe_");
+
+        assertThat(formattedValue, is("Given a **person** named _Joe_"));
+    }
+
+    @Test
+    public void should_allow_markdown_formatting_if_configured() {
+        EnvironmentVariables environmentVariables = new MockEnvironmentVariables();
+        environmentVariables.setProperty("enable.markdown", "step");
+        Formatter formatter = new Formatter(issueTracking, environmentVariables);
+
+        String formattedValue = formatter.formatWithFields("Given a **person** named _Joe_");
+
+        assertThat(formattedValue, is("Given a <strong>person</strong> named <em>Joe</em>"));
     }
 
     @Test
